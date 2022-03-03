@@ -6,7 +6,7 @@ clear all; clc;
 
 pathCVC_Orig = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Original\';
 pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
-for idx = 99
+for idx = 333
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     mask = im2double(imread([pathCVC_Mask, num2str(idx) '.tif']));
 
@@ -18,6 +18,9 @@ for idx = 99
     mira_potlaceni = 1.5;
     im_odlesk = im>(mean(im(:))+mira_potlaceni*std(im(:))); % Práh pro odstranění odlesků
     image = regionfill(im,im_odlesk);
+    image2 = imfill(ordfilt2(im,1,ones(5,5)),'holes');
+
+    %     image = image1-image2;
 
     %     % Vykreslení smazání odlesků
     %     figure
@@ -48,28 +51,37 @@ for idx = 99
     imhist(grad)
     title('Histogram')
 
-%     % Funkce Edge
-%     figure
-%     E = edge(image,'sobel');
-%     imshow(E)
+    % Lawovi filtry 
+    load("Laws.mat")
+    L = 9;
+    [m,n] = size(image);
+    pm = zeros(m,n,L);
 
-    % Pokus o filtraci 
-    filt = [-1 -1 -1;0 0 0;-1 -1 -1];
-    edgeIm = filter2(filt,image);
+    K = 35;
+    mask = ones(K,K)./(K^2);
+    MASK = fft2(mask,m,n);
     figure
-    subplot 121
-    imshow(edgeIm,[])
-    subplot 122
-    imshow(edge(edgeIm,'zerocross'),[])
-        
-    K = 9.2;
-    h1 = (1/(K-8)).*[-1,-1,-1;-1,K,-1;-1,-1,-1];
-    sh1 = conv2(image,h1,'same');
+    for i=1:L
+        out = abs(conv2(image, rot90(law(:,:,i),2), "same"));
+        OUT = fft2(out) .* MASK;
+        out = real(ifft2(OUT));
+        pm(:,:,i) = out;
+        subplot(3,3,i)
+        imshow(out,[])
+    end
+
+    % Homomorfická filtrace na srovnání jasu v obraze
     figure
-    subplot 121
-    imshow(sh1,[])
-    subplot 122
-    imshow(edge(sh1,'approxcanny'),[])
+    subplot(121)
+    imshow(image);
+    homofil(image,10,m,n,2);
+
+    %     % Funkce Edge
+    %     figure
+    %     E = edge(image,'sobel');
+    %     imshow(E)
+
 end
 
 %% detekce v zóně, kde je náznak elipsovitého útvaru
+%% 3d vlnka a použít korelaci
