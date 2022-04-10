@@ -4,9 +4,12 @@ clear all; clc;
 %% nacteni
 % Zmen si cestu k souboru!
 
-pathCVC_Orig = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Original\';
-pathCVC_Mask = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Ground Truth\';
-for idx = 20
+% pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Original\';
+% pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
+
+pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\Original\primo\';
+pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
+for idx = 464
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
     mask = im2double(imread([pathCVC_Mask, num2str(idx) '.tif']));
@@ -356,3 +359,30 @@ end
 % w = watershed(grad);
 % 
 % imshow(label2rgb(w,'jet','k'),[])
+
+%% Lab
+
+imLab = rgb2lab(imPrep);
+figure
+subplot 121
+imshow(imLab(:,:,2),[])
+subplot 122
+imhist(zscore(imLab(:,:,2)),256)
+
+T = graythresh(imLab(:,:,2));
+figure
+imshow(imLab(:,:,3)>0.6*max(imLab(:,:,3),[],'all') | imLab(:,:,2)>0.6*max(imLab(:,:,2),[],'all'),[])
+
+
+%%
+% Správný postup? - ořezání rámečku
+%               - smazání odlesků
+%               - korekce osvětlení
+%               - Hlednání výchozího bodu pro segmentaci
+%                    a) HT kružnic - občasné odchylky
+%                    b) Lab barevný prostor - prahování v ab - jen někde
+%               - RegionGrowing - prozatím nejlepší metoda s nízkým prahem
+%               - Kontura - parametrická - problém s gradientem (obrysy jsou slabě kontrastní)
+% Analýza na základě rozdělení do skupin podle pohledu
+%Prahovaní s histerezí
+% klasifikatory - randomforest
