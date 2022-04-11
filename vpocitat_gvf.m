@@ -8,7 +8,7 @@ for i=1:iterace_gvf
     u = u + krok_gvf*4*del2(u) - gradient_na_2.*(u-dx);
     v = v + krok_gvf*4*del2(v) - gradient_na_2.*(v-dy);
     if (mod(i,10) == 0)
-        title([num2str(i/iterace_gvf*100) '% vypoctu gvf'])
+        disp([num2str(i/iterace_gvf*100) '% vypoctu gvf'])
         pause(0.01)
     end
 end

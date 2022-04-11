@@ -3,13 +3,10 @@
 clear all; clc;
 %% nacteni
 % Zmen si cestu k souboru!
+pathCVC_Orig = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Original\';
+pathCVC_Mask = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Ground Truth\';
+for idx = 288
 
-% pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Original\';
-% pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
-
-pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\Original\primo\';
-pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
-for idx = 464
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
     mask = im2double(imread([pathCVC_Mask, num2str(idx) '.tif']));
@@ -18,7 +15,7 @@ end
 %% odstraneni ramecku, smazani odlesku a korekce osvetleni
 
 % odstraneni ramecku
-clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow maskCropped maskCroppedRow
+clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow maskCropped maskCroppedRow gaussFilt
 imHSV = rgb2hsv(imColor); % prevod do HSV
 bEdgeMask = (imHSV(:,:,3) <= 0.2); % konstanta podle Sanchez2018
 % imCropped = zeros(size(imHSV));
@@ -41,11 +38,20 @@ for j = 1:size(bEdgeMask2,2)
     end
 end
 
+% %!! nove - rozmazani do okraju
+% N = 39;
+% meanMask = 1/(N^2).*ones(N,N);
+% blurMask = imdilate(bEdgeMask3,[strel('line',2,45) strel('line',2,135) strel('line',1,0) strel('line',1,90)]);
+% 
+% meanFilt = imfilter(imCropped,meanMask);
+% imCropped = imCropped + 1.5.*blurMask.*meanFilt;
+% imshow(imCropped)
+
 % smazani odlesku - alternativa 2
 pm = rangefilt(rgb2gray(imCropped),true(7));
 T = graythresh(pm);
-reflmask = imbinarize(imfill(pm,'holes'),T);
-imCropped = inpaintCoherent(imCropped,logical((~bEdgeMask3).*reflmask),'SmoothingFactor',5,'Radius',5);
+reflMask = imbinarize(imfill(pm,'holes'),T);
+imCropped = inpaintCoherent(imCropped,logical((~bEdgeMask3).*reflMask),'SmoothingFactor',5,'Radius',5);
 % imshow(imCropped)
 % imCropped = inpaintExemplar(imCropped,bEdgeMask3,'PatchSize',[30 30]);
 % imCropped = imgaussfilt(imCropped,0.8);
@@ -58,54 +64,147 @@ mm = zeros(m,n,o);
 N = 19;
 meanMask = 1/(N^2).*ones(N,N);
 for j = 1:o
-    mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % vaha 0.3 podle Sanchez2018
+    mm(:,:,j) = 0.15.*conv2(imCropped(:,:,j),meanMask,'same'); % vaha 0.3 podle Sanchez2018 - lehce zmenena
 end
 imPrep = imCropped - mm;
 figure
-imshow(imPrep,[])
-%% uprava preprocesovaneho obrazu - zatim nespoustet
-% figure;
-% for j = 1:3
-%     edgedImage(:,:,j) = edge(imPrep(:,:,j),'canny',[.03 .1],sqrt(2)); % konstanty nastaveny podle Sanchez2018
-%     subplot(1,3,j)
-%     imshow(edgedImage(:,:,j))
-% end
-% edgedImage = edgedImage(:,:,1).*edgedImage(:,:,2).*edgedImage(:,:,3);
+imshowpair(imPrep,maskCropped,'montage')
 
+%% uprava preprocesovaneho obrazu - zatim nespoustet
+figure;
+for j = 1:3
+    edgedImage(:,:,j) = edge(imPrep(:,:,j),'canny',[.03 .1],sqrt(2)); % konstanty nastaveny podle Sanchez2018
+    subplot(1,3,j)
+    imshow(edgedImage(:,:,j))
+end
+% edgedImage = edgedImage(:,:,1).*edgedImage(:,:,2).*edgedImage(:,:,3);
+%% mikrostrukturni analyza, clustering a nasledna analyza s geometrickou konturou
+load('Laws.mat')
+imPrepGray = rgb2gray(imPrep);
+imPrepHSV = rgb2hsv(imPrep);
+imPrepLab = rgb2lab(imPrep);
+imPrepV = imPrepLab(:,:,3);
+% creating parametric maps
+L = size(law,3);
+pm = zeros(m,n,L);
+
+for i = 1:L
+    pm(:,:,i) = abs(conv2(imPrepGray,rot90(law(:,:,i),2),'same')); % rotation of mask must be done
+end
+ 
+% k-means 
+% clus = kmeans(reshape(pm,m*n,L),3);
+% clusim = reshape(clus,m,n); 
+% c-means
+[~,clus] = fcm(reshape(imPrepV,m*n,1),3,[2 100 1e-4 0]);
+% [~,clus] = fcm(reshape(pm,m*n,L),3,[2 100 1e-4 0]);
+clusim = reshape(clus',m,n,3);
+imshow(clusim)
+% creating threshold
+thresArray = zeros(o,2);
+for i = 1:o
+    clusim(:,:,i) = medfilt2(clusim(:,:,i),[3 3]);
+    % for k-means
+%     thresArray(i,1) = min(imPrepGray(clusim(:,:)==i));
+%     thresArray(i,2) = max(imPrepGray(clusim(:,:)==i));
+    % pro c-means
+    thresArray(i,1) = min(imPrepV(clusim(:,:,i)>0.75));
+    thresArray(i,2) = max(imPrepV(clusim(:,:,i)>0.75));
+end
+thresArray = sort(thresArray);
+threshold1 = thresArray(2,1);
+threshold2 = thresArray(2,2);
+% threshold variant 2
+imPrepGray = double(grayslice(imPrepGray,255));
+imValues = unique(imPrepGray);
+fuzzyMat = zeros(length(imValues),3);
+for valIter = 1:length(imValues)
+    fuzzyMat(valIter,1) = mean(clus(1,imPrepGray(:) == imValues(valIter)));
+    fuzzyMat(valIter,2) = mean(clus(2,imPrepGray(:) == imValues(valIter)));
+    fuzzyMat(valIter,3) = mean(clus(3,imPrepGray(:) == imValues(valIter)));
+end
+repMed = max(min(repmat(fuzzyMat(:,2),1,size(fuzzyMat,1)),repmat(fuzzyMat(:,1)',size(fuzzyMat,1),1)));
+repHigh = max(min(repmat(fuzzyMat(:,3),1,size(fuzzyMat,1)),repmat(fuzzyMat(:,2)',size(fuzzyMat,1),1)));
+% creating rough segmentation
+% medHighBW = imPrepGray>threshold2;
+medHighBW = (threshold1<imPrepGray) & (imPrepGray<threshold2);
+medHighBW = imerode(medHighBW,strel('disk',7));
+medHighBW = imerode(medHighBW,strel('disk',7));
+imshow(medHighBW)
+% obtaining region properties
+% props = regionprops(medHighBW,'Area','Centroid','Circularity','ConvexHull','ConvexImage','MajorAxisLength','MinorAxisLength');
+% propsCell = struct2cell(props)';
+% areas = cell2mat(propsCell(:,1));
+% [~,idxVec] = sort(areas,'descend');
+% idx = idxVec(1);
+% BW = roipoly(medHighBW,props(idx).ConvexHull(:,1),props(idx).ConvexHull(:,2));
+% binaryMap = activecontour(imPrepGray,BW);
+imshowpair(maskCropped,medHighBW)
+%% k-means z gradientu
+% imForGrad = medfilt2(rgb2gray(imPrep),[5 5]);
+grad = imgradient(rgb2gray(imPrep));
+grad = double(grayslice(grad,7));
+cat = kmeans(reshape(grad,[],1),3);
+cat = reshape(cat,size(imPrep,1),size(imPrep,2));
+imshow(cat,[])
+% imshow(imclose(cat,[0,1,0;1,1,1;0,1,0]),[])
+imEdge = (cat == 3 & grad>1);
+
+%% Houghova transformace pro kruh - mohla by fungovat
+imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2)); % varianta s rgb
+% imEdge = edge(imPrepLab(:,:,3),'canny'); % varianta s Lab
+
+
+rs = 5:50;
+HS = zeros(size(imPrep,1),size(imPrep,2),length(rs));
+r_ind = 1;
+[X,Y] = find(imEdge == 1);
+for r = rs
+    tmp_c = gen_circle(r);
+    for i = 1:length(X)
+        c1 = X(i);
+        c2 = Y(i);
+        if c1 > r && c1< (size(imPrep,1) - r)
+            if c2 > r && c2< (size(imPrep,2) - r)
+                HS((c1-r):(c1+r),(c2-r):(c2+r),r_ind) = HS((c1-r):(c1+r),(c2-r):(c2+r),r_ind)+tmp_c;
+            end
+        end
+    end
+    r_ind = r_ind + 1;
+end
+% imshow5(HS)
+[linInd] = find(HS == max(HS,[],'all'));
+[y,x,r] = ind2sub(size(HS),linInd);
+
+imshow(imPrep);hold on; for i = 1:length(x);h = images.roi.Circle(gca,'Center',[x(i) y(i)],'Radius',r(i));end
+
+% if length(x)>1 || length(y)>1
+%     x = floor(mean(x));
+%     y = floor(mean(y));
+% end
+% roiMask = createMask(h);
 %% region growing
-seedRow = 201; % je nutne vymyslet jak zjistit pozici seminka
-seedCol = 181;
+seedRow = 140; % je nutne vymyslet jak zjistit pozici seminka
+seedCol = 69;
+% [~,seedRow] = max(sum(imPrep(:,:,1),2)); % je nutne vymyslet jak zjistit pozici seminka
+% [~,seedCol] = max(sum(imPrep(:,:,1),1));
 figure;
 for i = 1:o
-segIm(:,:,i) = grayconnected(imPrep(:,:,i),seedRow,seedCol,0.06);
+% segIm(:,:,i) = grayconnected(imPrep(:,:,i),seedRow,seedCol,0.02); % pozici definujeme my
+% segIm(:,:,i) = grayconnected(imPrep(:,:,i),x,y,0.02); % pozici definuje Houghova t.
+% segIm(:,:,i) = regiongrowing(imPrep(:,:,i),x,y,0.02); % jina region growing funkce, pozici definuje Houghova t.
 subplot(1,3,i)
 imshow(segIm(:,:,i))
 end
-%% Houghova transformace pro kruh - mohla by fungovat - zatim zakomentovana
-% imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2));
-% rs = 5:40;
-% HS = zeros(size(imPrep,1),size(imPrep,2),length(rs));
-% r_ind = 1;
-% [X,Y] = find(imEdge == 1);
-% for r = rs
-%     tmp_c = gen_circle(r);
-%     for i = 1:length(X)
-%         c1 = X(i);
-%         c2 = Y(i);
-%         if c1 > r && c1< (size(imPrep,1) - r)
-%             if c2 > r && c2< (size(imPrep,2) - r)
-%                 HS((c1-r):(c1+r),(c2-r):(c2+r),r_ind) = HS((c1-r):(c1+r),(c2-r):(c2+r),r_ind)+tmp_c;
-%             end
-%         end
-%     end
-%     r_ind = r_ind + 1;
-% end
-% % imshow5(HS)
-% [linInd] = find(HS == max(HS,[],'all'));
-% [y,x,r] = ind2sub(size(HS),linInd);
-% 
-% imshow(imPrep);hold on; for i = 1:length(x);h = images.roi.Circle(gca,'Center',[x(i) y(i)],'Radius',r(i));end
-% roiMask = createMask(h);
+%% geometricke kontury
+% stanoveni pocatecnich hranic pro vystup HT - zatim nevyuzite
+% X = bwboundaries(roiMask == 1, 8); 
+
+% stanoveni pocatecnich hranic pro vystup region growing
+sumRegion = reshape(sum(sum(segIm)),[3 1 1]);
+[~,smallObjChannel] = min(sumRegion);
+final = activecontour(rgb2gray(imCropped),segIm(:,:,smallObjChannel));%imdilate(segIm(:,:,smallObjChannel),[1 1 1; 1 1 1; 1 1 1])
+imshowpair(maskCropped,final)
 %% parametricke kontury
 % stanoveni pocatecnich hranic pro vystup HT - zatim nevyuzite
 % X = bwboundaries(roiMask == 1, 8); 
@@ -113,36 +212,35 @@ end
 % stanoveni pocatecnich hranic pro vystup region growing
 sumRegion = reshape(sum(sum(segIm)),[3 1 1]);
 [~,smallObjChannel] = min(sumRegion);
-X = bwboundaries(imdilate(segIm(:,:,smallObjChannel),[1 1 1; 1 1 1; 1 1 1]), 8); 
-
+X = bwboundaries(imdilate(segIm(:,:,smallObjChannel),[1 1 1; 1 1 1; 1 1 1]), 8);
 % switch x and y coordinates
 X = X{1};
 X = X(:,[2,1]);
-figure;
-imshow(imPrep,[]); hold on
-plot(X(:,1), X(:,2), 'r')
+% figure;
+% imshow(imPrep,[]); hold on
+% plot(X(:,1), X(:,2), 'r')
 
 % Parameters
-W = 3.0;    
+W = 2.0;    
 alpha = 1;
 beta = 1;
-step = 2;
+step = 1;
 num_ite = 100;
-
 
 % Optimization
 G = imgaussfilt(rgb2gray(imPrep),5);
 [aGoG,pGoG] = imgradient(G);
 [Gx,Gy] = imgradientxy(aGoG.^2);
-% [Gx,Gy] = vpocitat_gvf(aGoG.^2,100,1.5); % eliminate the problem of contour in the background
-figure;
-imshow(imPrep,[])
-hold on
-quiver(Gx,Gy)
-hold off
+% [Gx,Gy] = vpocitat_gvf(aGoG.^2,5,0.75); % eliminate the problem of contour in the background
 
-% Gx = Gx.^2;
-% Gy = Gy.^2;
+% figure;
+% imshow(imPrep,[])
+% hold on
+% quiver(Gx,Gy)
+% hold off
+
+% Gx = 20.*Gx;
+% Gy = 20.*Gy;
 
 for ite = 1 : num_ite
     h = sqrt(diff([X(:,1);X(1,1)]).^2 + diff([X(:,2);X(1,2)]).^2);
@@ -176,7 +274,7 @@ for ite = 1 : num_ite
     
     % Balloon force
     N = comp_normal(X);
-    w_bal = 0.07;
+    w_bal = 0.1;
 %     
     % Pohyb kontury
 %     X = (eye(numP)+step.*A)^(-1) * (X + step.*W.*Fext); % basic optimalization
@@ -190,11 +288,11 @@ for ite = 1 : num_ite
     drawnow;
 
     % interpolation of distant contour points
-    if ite==num_ite
-        D =[0; cumsum(sum(abs(diff(X)),2))];
-        X = interp1(D,X,D(1):5:D(end)); % ...to close the gaps
-    end
-    
+%     if ite==num_ite
+%         D =[0; cumsum(sum(abs(diff(X)),2))];
+%         X = interp1(D,X,D(1):5:D(end)); % ...to close the gaps
+%     end
+%     
     if any(X(:,1)>(size(imPrep,2)-2)) || any(X(:,1)<2) || any(X(:,2)>(size(imPrep,1)-2)) || any(X(:,2)<2)
         break
     end
