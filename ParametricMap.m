@@ -126,5 +126,10 @@ for idx = 1:n
     ParametricField(idx,48) = ParametricField(idx,46)/ParametricField(idx,45);
 end
 
-%%
+%% ulozeni a vykresleni
 save("Parametric_Field","ParametricField","Labels")
+
+% nestandardizovane
+boxplot(ParametricField,'Labels',Labels)
+% standardizovane
+boxplot(zscore(ParametricField),'Labels',Labels)

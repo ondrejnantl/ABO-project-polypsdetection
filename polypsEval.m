@@ -57,7 +57,7 @@ for imIter = 1:numImages
 %     resultCC = bwconncomp(resultCell{imIter});
 %     GTCC = bwconncomp(logical(GTCropped));
     % classifing detection with object-wise approach 
-    if IoU(imIter) > 0.3 % threshold can be changed
+    if IoU(imIter) > 0.4 % threshold can be changed
         TP = TP + 1;
     else
         if any(any(logical(GTCropped)>0)) && all(all(resultCell{imIter} == 0))

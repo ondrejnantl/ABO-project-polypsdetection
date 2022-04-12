@@ -5,7 +5,7 @@ clear all; clc;
 % Zmen si cestu k souboru!
 pathCVC_Orig = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Original\';
 pathCVC_Mask = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Ground Truth\';
-for idx = 199
+for idx = 239
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
     mask = im2double(imread([pathCVC_Mask, num2str(idx) '.tif']));
@@ -82,9 +82,15 @@ end
 % edgedImage = edgedImage(:,:,1).*edgedImage(:,:,2).*edgedImage(:,:,3);
 
 %% Houghova transformace pro kruh - mohla by fungovat
-imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2)); % varianta s rgb
+% imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2)); % varianta s rgb - konstanty podle Sanchez2018
 % imEdge = edge(imPrepLab(:,:,3),'canny'); % varianta s Lab
-
+% zkouska odhadnout hranovou reprezentaci polypu ze SDRed  
+stdPic = stdfilt(imPrep(:,:,1),true(5)); % !!!!! vyzkouset v evaluacni funkci
+Ts = graythresh(stdPic);
+Tv = graythresh(imPrepHSV(:,:,3)); % eliminace hran v tmavem pozadi
+imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
+% imEdge = imerode(imEdge,[0 0 0; 1 1 1; 0 0 0]);
+% props = regionprops(imEdge,'Area','Centroid','Circularity','ConvexHull','ConvexImage','MajorAxisLength','MinorAxisLength');
 
 rs = 5:50;
 HS = zeros(size(imPrep,1),size(imPrep,2),length(rs));
@@ -122,7 +128,7 @@ seedCol = 69;
 figure;
 for i = 1:o
 % segIm(:,:,i) = grayconnected(imPrep(:,:,i),seedRow,seedCol,0.02); % pozici definujeme my
-segIm(:,:,i) = grayconnected(imPrep(:,:,i),y,x,0.02); % pozici definuje Houghova t.
+segIm(:,:,i) = grayconnected(imPrep(:,:,i),y,x,0.25*std(imPrepGray,[],'all')); % pozici definuje Houghova t.
 % segIm(:,:,i) = regiongrowing(imPrep(:,:,i),y,x,0.02); % jina region growing funkce, pozici definuje Houghova t.
 subplot(1,3,i)
 imshow(segIm(:,:,i));hold on; plot(x,y,'rx')
@@ -133,7 +139,7 @@ final = imfill(segIm(:,:,smallObjChannel),'holes');
 figure
 imshowpair(maskCropped,final)
 
-%% hysterezni prahovani
+%% hysterezni prahovani - Ondra
 % BW = hysthresh(rgb2gray(imPrep),0.6,0.4);
 BW = hysthresh(imPrepLab(:,:,2),0.75*max(imPrepLab(:,:,2),[],'all'),0.65*max(imPrepLab(:,:,2),[],'all'));
 BW = imerode(BW,strel('disk',3));
@@ -149,9 +155,48 @@ if (props(biggest).Area>0.4*m*n) && length(props)>1
     seedCol = round(props(sbiggest).Centroid(1));
 end
 % segIm = grayconnected(imPrepGray,seedRow,seedCol,0.1*std(imPrepGray,[],'all'));
-segIm = grayconnected(imPrepLab(:,:,2),seedRow,seedCol,0.5*std(imPrepLab(:,:,2),[],'all'));
+segIm = grayconnected(imPrepLab(:,:,2),seedRow,seedCol,0.75*std(imPrepLab(:,:,2),[],'all'));
 segIm = imfill(segIm,'holes');
 imshowpair(maskCropped,segIm);hold on; plot(seedCol,seedRow,'rx')
+%% prahování hysterezí - Terka  
+imPre = rgb2gray(im2double(imPrep));
+sobel = [-1 -2 -1; 0 0 0; 1 2 1];
+Idx = conv2(imPre,sobel,'same');
+Idy = conv2(imPre,sobel','same');
+grad = sqrt(Idx.^2 +Idy.^2 );
+figure (1)
+subplot 121
+imshow(imPre,[])
+title('grayscale image')
+subplot 122
+imshow(grad,[])
+title('Euclid distance gradient')
+figure(2)
+imhist(grad);
+
+thresholds = graythresh(grad);
+%img= imhist(imPre);
+% T1=thresholds(1);
+% T2=thresholds(2);
+%I_tr_2 = zeros(size(imPre));
+% I_tr_2(grad>=threshold_1 & grad<threshold_2)=1;
+% % %I_tr_1(imPre<=threshold_1  imPre>=threshold_2)=0;
+% % %I_tr_2(imPre>=threshold_2 & imPre<=threshold_1)=1;
+% M = median(imPre);
+% T2 = 1.33*M;
+% T1 = 0.6*M;
+T1 = 0.3;
+T2 = T1/2;
+% T1 = thresholds;
+h=hysthresh(grad,T1,T2);
+figure(3)
+imshow(h)
+title('Hysteresis thresholding')
+%CANNYHO DETEKTOR 
+figure(4)
+HR=edge(grad,'canny');
+imshow(HR,[])
+title('cannyho detector')
 %% mikrostrukturni analyza, clustering a nasledna analyza s geometrickou konturou
 load('Laws.mat')
 imPrepV = imPrepLab(:,:,2);
