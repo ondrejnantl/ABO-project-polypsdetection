@@ -9,7 +9,7 @@ imDS = imageDatastore([datasetPath '\Original'],'ReadFcn', @read2double);%,'Read
 groundTruthDS = imageDatastore([datasetPath '\Ground Truth']);
 
 % Obtaining information about dimensions of input images and their count
-imForDim = size(imread(imDS.Files{1}));
+% imForDim = size(imread(imDS.Files{1}));
 numImages = size(imDS.Files,1);
 
 % resultDataMatrix = double(zeros(imForDim(1),imForDim(2),numImages));
@@ -52,12 +52,12 @@ for imIter = 1:numImages
     % evaluation of our algorithm using Dice and Jaccard coefficients
 %     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
 %     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
-    diceCoef(imIter) = 100*dice(resultCell{imIter},logical(GTCropped));
-    IoU(imIter) = 100*jaccard(resultCell{imIter},logical(GTCropped));
+    diceCoef(imIter) = dice(resultCell{imIter},logical(GTCropped));
+    IoU(imIter) = jaccard(resultCell{imIter},logical(GTCropped));
 %     resultCC = bwconncomp(resultCell{imIter});
 %     GTCC = bwconncomp(logical(GTCropped));
     % classifing detection with object-wise approach 
-    if IoU(imIter) > 0.4 % threshold can be changed
+    if IoU(imIter) > .45 % threshold can be changed
         TP = TP + 1;
     else
         if any(any(logical(GTCropped)>0)) && all(all(resultCell{imIter} == 0))

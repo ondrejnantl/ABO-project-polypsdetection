@@ -23,22 +23,30 @@ imPrep = imCropped - mm;
 imPrepLab = rgb2lab(imPrep);
 imPrepGray = rgb2gray(imPrep);
 %% hysteresis thresholding
-BW = hysthresh(imPrepLab(:,:,2),0.75*max(imPrepLab(:,:,2),[],'all'),0.65*max(imPrepLab(:,:,2),[],'all'));
+% using grayscale image
+T = multithresh(imPrepGray,2);
+BW = hysthresh(imPrepGray,T(2),T(1));
+% using lab space
+% T = multithresh(imPrepLab(:,:,2),2);
+% BW = hysthresh(imPrepLab(:,:,2),T(2),T(1));
+% BW = hysthresh(imPrepLab(:,:,2),0.75*max(imPrepLab(:,:,2),[],'all'),0.65*max(imPrepLab(:,:,2),[],'all'));
+
 % BW = imerode(BW,strel('disk',2));
-props = regionprops(BW,'Area','Centroid','Circularity','ConvexHull','ConvexImage','FilledImage','MajorAxisLength','MinorAxisLength');
-[~,idx] = sort([props.Area]);
+props = regionprops(BW,'Area','Centroid');%,'Circularity','ConvexHull','ConvexImage','FilledImage','MajorAxisLength','MinorAxisLength'
+[~,idx] = sort([props.Area],'descend');
 biggest = idx(1) ;
 seedRow = round(props(biggest).Centroid(2));
 seedCol = round(props(biggest).Centroid(1));
-if (props(biggest).Area>0.4*m*n) && length(props)>1
-    sbiggest = idx(2);
-    seedRow = round(props(sbiggest).Centroid(2));
-    seedCol = round(props(sbiggest).Centroid(1));
-end
+% if (props(biggest).Area>0.6*m*n) && length(props)>1
+%     sbiggest = idx(2);
+%     seedRow = round(props(sbiggest).Centroid(2));
+%     seedCol = round(props(sbiggest).Centroid(1));
+% end
 segIm = zeros(size(imPrepGray));
 Trg = 0.25*std(imPrepGray,[],'all');
 while sum(segIm == 1)< 0.00005*m*n
-segIm = grayconnected(imPrepGray,seedRow,seedCol,1.25*Trg);
+segIm = grayconnected(imPrepGray,seedRow,seedCol,Trg);
+Trg = 1.25*Trg;
 end
 % segIm = grayconnected(imPrepLab(:,:,2),seedRow,seedCol,0.5*std(imPrepGray,[],'all'));
 binaryMap = imfill(segIm,'holes');
