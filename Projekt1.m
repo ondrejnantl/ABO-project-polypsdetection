@@ -3,8 +3,8 @@
 clear all; clc;
 %% nacteni
 % Zmen si cestu k souboru!
-pathCVC_Orig = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Original\';
-pathCVC_Mask = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Ground Truth\';
+pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Original\';
+pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
 for idx = 199
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
@@ -114,15 +114,29 @@ imshow(imPrep);hold on; for i = 1:length(x);h = images.roi.Circle(gca,'Center',[
 %     y = floor(mean(y));
 % end
 % roiMask = createMask(h);
+%% Hysterezni prahovani Terka
+% BW = im2bw(imPrep,0.5);
+imPre = rgb2gray(im2double(imPrep));
+thresholds = multithresh(imPre,2);
+T1 = thresholds(2);
+T2 = thresholds(1);
+h=hyst_thresh(imPre,T1,T2);
+
+centers = regionprops(h);
+loc = find(max([centers.Area]));
+[x,y] = centers(loc).Centroids;
+
+seedRow = round(x);
+seedCol = round(y);
 %% region growing
-seedRow = 140; % je nutne vymyslet jak zjistit pozici seminka
-seedCol = 69;
+% seedRow = randi(size(imPrep,1)); % je nutne vymyslet jak zjistit pozici seminka
+% seedCol = randi(size(imPrep,2));
 % [~,seedRow] = max(sum(imPrep(:,:,1),2)); % je nutne vymyslet jak zjistit pozici seminka
 % [~,seedCol] = max(sum(imPrep(:,:,1),1));
 figure;
 for i = 1:o
-% segIm(:,:,i) = grayconnected(imPrep(:,:,i),seedRow,seedCol,0.02); % pozici definujeme my
-segIm(:,:,i) = grayconnected(imPrep(:,:,i),y,x,0.02); % pozici definuje Houghova t.
+segIm(:,:,i) = grayconnected(imPrep(:,:,i),seedRow,seedCol,0.02); % pozici definujeme my
+% segIm(:,:,i) = grayconnected(imPrep(:,:,i),y,x,0.02); % pozici definuje Houghova t.
 % segIm(:,:,i) = regiongrowing(imPrep(:,:,i),y,x,0.02); % jina region growing funkce, pozici definuje Houghova t.
 subplot(1,3,i)
 imshow(segIm(:,:,i));hold on; plot(x,y,'rx')
@@ -135,6 +149,7 @@ imshowpair(maskCropped,final)
 
 %% hysterezni prahovani
 % BW = hysthresh(rgb2gray(imPrep),0.6,0.4);
+
 BW = hysthresh(imPrepLab(:,:,2),0.75*max(imPrepLab(:,:,2),[],'all'),0.65*max(imPrepLab(:,:,2),[],'all'));
 BW = imerode(BW,strel('disk',3));
 imshow(BW)
@@ -485,16 +500,16 @@ imEdge = (cat == 3 & grad>1);
 
 %% Lab
 
-imLab = rgb2lab(imPrep);
-figure
-subplot 121
-imshow(imLab(:,:,2),[])
-subplot 122
-imhist(zscore(imLab(:,:,2)),256)
-
-T = graythresh(imLab(:,:,2));
-figure
-imshow(imLab(:,:,3)>0.6*max(imLab(:,:,3),[],'all') | imLab(:,:,2)>0.6*max(imLab(:,:,2),[],'all'),[])
+% imLab = rgb2lab(imPrep);
+% figure
+% subplot 121
+% imshow(imLab(:,:,2),[])
+% subplot 122
+% imhist(zscore(imLab(:,:,2)),256)
+% 
+% T = graythresh(imLab(:,:,2));
+% figure
+% imshow(imLab(:,:,3)>0.6*max(imLab(:,:,3),[],'all') | imLab(:,:,2)>0.6*max(imLab(:,:,2),[],'all'),[])
 
 
 %%

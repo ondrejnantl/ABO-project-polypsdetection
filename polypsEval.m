@@ -1,7 +1,7 @@
 function [resultCell,Se,PPV,diceCoef,IoU] = polypsEval(datasetPath)
 % This function can be used for evaluating the performance of polyp
 % detection/segmentation algorithm
-% 
+%
 % Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
 % =========================================================================
 % Gaining the names of images  - original and ground truth
@@ -19,10 +19,11 @@ IoU = zeros(numImages,1);
 TP = 0; FP = 0; FN = 0;
 
 for imIter = 1:numImages
-    % loading one image and its ground truth mask 
+    % loading one image and its ground truth mask
     image = readimage(imDS,imIter);
     GT = im2double(readimage(groundTruthDS,imIter));
     GT(GT<1) = 0;
+    disp(imIter)
     % cropping of the black frame
     clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow GTCropped GTCroppedRow
     imHSV = rgb2hsv(image); % transfer into HSV
@@ -46,17 +47,20 @@ for imIter = 1:numImages
         end
     end
     % analysis of the image using our algorithm
-    % this is important     
-%     resultDataMatrix(:,:,imIter) = detectPolyps(imCropped,bEdgeMask3);
+    % this is important
+    %     resultDataMatrix(:,:,imIter) = detectPolyps(imCropped,bEdgeMask3);
     resultCell{imIter} = detectPolyps(imCropped,bEdgeMask3);
+
+    figure(1)
+    imshow(imCropped.*resultCell{imIter})
     % evaluation of our algorithm using Dice and Jaccard coefficients
-%     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
-%     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
+    %     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
+    %     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
     diceCoef(imIter) = 100*dice(resultCell{imIter},logical(GTCropped));
     IoU(imIter) = 100*jaccard(resultCell{imIter},logical(GTCropped));
-%     resultCC = bwconncomp(resultCell{imIter});
-%     GTCC = bwconncomp(logical(GTCropped));
-    % classifing detection with object-wise approach 
+    %     resultCC = bwconncomp(resultCell{imIter});
+    %     GTCC = bwconncomp(logical(GTCropped));
+    % classifing detection with object-wise approach
     if IoU(imIter) > 0.3 % threshold can be changed
         TP = TP + 1;
     else
@@ -66,16 +70,19 @@ for imIter = 1:numImages
             FP = FP + 1;
         end
     end
-    
+
 end
 Se = TP/(TP + FN);
 PPV = TP/(TP + FP);
+
+
 end
 
 function image = read2double(path)
-    image = im2double(imread(path));
+image = im2double(imread(path));
 end
 
 % function image = read2gray(path)
 %     image = rgb2gray(im2double(imread(path)));
 % end
+
