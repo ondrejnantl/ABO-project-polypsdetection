@@ -1,8 +1,21 @@
 function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
-% UNTITLED Summary of this function goes here
-% Detailed explanation goes here
+% This function detects and segments polyps in RGB colonoscopy images using 
+% hysteresis thresholding and region growing technique
 % 
-% Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
+% Image is before detection preprocessed by eliminating specular highlights
+% and correction of variant lighting
+% -------------------------------------------------------------------------
+% Input: 
+% inputImage - input RGB image obtained during colonoscopy (after cropping
+% in evaluation function)
+%
+% bEdgeMask - mask identifying the remaining part of black edges present in
+% the input image (it is necessary to avoid inpainting black edges)
+%
+% Output:
+% binaryMap - estimated average respiratory rate as double
+% -------------------------------------------------------------------------
+% Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
 %% elimination of specular highlights and correction of variant lighting
 % elimination of specular highlights
@@ -20,9 +33,12 @@ for j = 1:o
     mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
 end
 imPrep = imCropped - mm;
-imPrepLab = rgb2lab(imPrep);
+% imPrepLab = rgb2lab(imPrep);
 imPrepGray = rgb2gray(imPrep);
 %% hysteresis thresholding
+% using red component of an image
+T = multithresh(imPrep(:,:,1),2);
+BW = hysthresh(imPrep(:,:,1),T(2),T(1));
 % using grayscale image
 T = multithresh(imPrepGray,2);
 BW = hysthresh(imPrepGray,T(2),T(1));
@@ -34,7 +50,7 @@ BW = hysthresh(imPrepGray,T(2),T(1));
 % BW = imerode(BW,strel('disk',2));
 props = regionprops(BW,'Area','Centroid');%,'Circularity','ConvexHull','ConvexImage','FilledImage','MajorAxisLength','MinorAxisLength'
 [~,idx] = sort([props.Area],'descend');
-biggest = idx(1) ;
+biggest = idx(1);
 seedRow = round(props(biggest).Centroid(2));
 seedCol = round(props(biggest).Centroid(1));
 % if (props(biggest).Area>0.6*m*n) && length(props)>1
@@ -42,13 +58,24 @@ seedCol = round(props(biggest).Centroid(1));
 %     seedRow = round(props(sbiggest).Centroid(2));
 %     seedCol = round(props(sbiggest).Centroid(1));
 % end
-segIm = zeros(size(imPrepGray));
-Trg = 0.25*std(imPrepGray,[],'all');
+
+% using red component of an image
+segIm = zeros(size(imPrep(:,:,1)));
+Trg = 0.6*std(imPrep(:,:,1),[],'all');
 while sum(segIm == 1)< 0.00005*m*n
-segIm = grayconnected(imPrepGray,seedRow,seedCol,Trg);
+segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
 Trg = 1.25*Trg;
 end
+
+% % using grayscale image
+% segIm = zeros(size(imPrepGray));
+% Trg = 0.61*std(imPrepGray,[],'all');
+% while sum(segIm == 1)< 0.00005*m*n
+% segIm = grayconnected(imPrepGray,seedRow,seedCol,Trg);
+% Trg = 1.25*Trg;
+% end
 % segIm = grayconnected(imPrepLab(:,:,2),seedRow,seedCol,0.5*std(imPrepGray,[],'all'));
+
 binaryMap = imfill(segIm,'holes');
 
 
