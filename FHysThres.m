@@ -5,7 +5,7 @@ T1 = thresholds(2);
 T2 = thresholds(1);
 h=hyst_thresh(imPre,T1,T2);
 
-centers = regionprops(~h);
+centers = regionprops(h);
 loc = find(max([centers.Area]));
 positions = centers(loc).Centroid;
 x = positions(1);

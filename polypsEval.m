@@ -26,6 +26,11 @@ function [resultCell,Se,PPV,diceCoef,IoU,P,N] = polypsEval(datasetPath)
 % diceCoef - numeric array containing calculated value of Sorensen-Dice
 % coefficient for every input image individually
 % 
+% P - the ratio between positive pixels in both masks and the number of
+% positive pixels in GT mask
+% 
+% N - the ratio between negative pixels in both masks and the number of
+% positive pixels in GT mask
 % -------------------------------------------------------------------------
 % Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
 % =========================================================================
@@ -48,7 +53,10 @@ for imIter = 1:numImages
     image = readimage(imDS,imIter);
     GT = im2double(readimage(groundTruthDS,imIter));
     GT(GT<1) = 0;
-    disp(imIter)
+    % displaying the progress
+    if mod(imIter,10) == 0
+        disp(imIter)
+    end
     % cropping of the black frame
     clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow GTCropped GTCroppedRow
     imHSV = rgb2hsv(image); % transfer into HSV

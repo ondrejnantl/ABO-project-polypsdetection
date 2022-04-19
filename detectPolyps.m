@@ -19,55 +19,55 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % =========================================================================
 %% elimination of specular highlights and correction of variant lighting
 
-% elimination of specular highlights
-pm = rangefilt(rgb2gray(inputImage),true(7));
-T = graythresh(pm);
-reflMask = imbinarize(imfill(pm,'holes'),T);
-imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5);
-
-% correction of variant lighting
-[m,n,o] = size(imCropped);
-mm = zeros(m,n,o);
-N = 20;
-meanMask = 1/(N^2).*ones(N,N);
-for j = 1:o
-    mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
-end
-imPrep = imCropped - mm;
-% imPrepLab = rgb2lab(imPrep);
-imPrepGray = rgb2gray(imPrep);
-%% hysteresis thresholding
-% using red component of an image
-T = multithresh(imPrep(:,:,1),2);
-BW = hysthresh(imPrep(:,:,1),T(2),T(1));
-% using grayscale image
-T = multithresh(imPrepGray,2);
-BW = hysthresh(imPrepGray,T(2),T(1));
-% using lab space
-% T = multithresh(imPrepLab(:,:,2),2);
-% BW = hysthresh(imPrepLab(:,:,2),T(2),T(1));
-% BW = hysthresh(imPrepLab(:,:,2),0.75*max(imPrepLab(:,:,2),[],'all'),0.65*max(imPrepLab(:,:,2),[],'all'));
-
-% BW = imerode(BW,strel('disk',2));
-props = regionprops(BW,'Area','Centroid');%,'Circularity','ConvexHull','ConvexImage','FilledImage','MajorAxisLength','MinorAxisLength'
-[~,idx] = sort([props.Area],'descend');
-biggest = idx(1);
-seedRow = round(props(biggest).Centroid(2));
-seedCol = round(props(biggest).Centroid(1));
-% if (props(biggest).Area>0.6*m*n) && length(props)>1
-%     sbiggest = idx(2);
-%     seedRow = round(props(sbiggest).Centroid(2));
-%     seedCol = round(props(sbiggest).Centroid(1));
+% % elimination of specular highlights
+% pm = rangefilt(rgb2gray(inputImage),true(7));
+% T = graythresh(pm);
+% reflMask = imbinarize(imfill(pm,'holes'),T);
+% imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5);
+% 
+% % correction of variant lighting
+% [m,n,o] = size(imCropped);
+% mm = zeros(m,n,o);
+% N = 20;
+% meanMask = 1/(N^2).*ones(N,N);
+% for j = 1:o
+%     mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
 % end
-
-% using red component of an image
-segIm = zeros(size(imPrep(:,:,1)));
-Trg = 0.6*std(imPrep(:,:,1),[],'all');
-while sum(segIm == 1)< 0.00005*m*n
-% segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
-segIm = regiongrowing(imPrep(:,:,1),seedRow,seedCol,Trg);
-Trg = 1.25*Trg;
-end
+% imPrep = imCropped - mm;
+% % imPrepLab = rgb2lab(imPrep);
+% imPrepGray = rgb2gray(imPrep);
+% %% hysteresis thresholding
+% % using red component of an image
+% T = multithresh(imPrep(:,:,1),2);
+% BW = hysthresh(imPrep(:,:,1),T(2),T(1));
+% % using grayscale image
+% T = multithresh(imPrepGray,2);
+% BW = hysthresh(imPrepGray,T(2),T(1));
+% % using lab space
+% % T = multithresh(imPrepLab(:,:,2),2);
+% % BW = hysthresh(imPrepLab(:,:,2),T(2),T(1));
+% % BW = hysthresh(imPrepLab(:,:,2),0.75*max(imPrepLab(:,:,2),[],'all'),0.65*max(imPrepLab(:,:,2),[],'all'));
+% 
+% % BW = imerode(BW,strel('disk',2));
+% props = regionprops(BW,'Area','Centroid');%,'Circularity','ConvexHull','ConvexImage','FilledImage','MajorAxisLength','MinorAxisLength'
+% [~,idx] = sort([props.Area],'descend');
+% biggest = idx(1);
+% seedRow = round(props(biggest).Centroid(2));
+% seedCol = round(props(biggest).Centroid(1));
+% % if (props(biggest).Area>0.6*m*n) && length(props)>1
+% %     sbiggest = idx(2);
+% %     seedRow = round(props(sbiggest).Centroid(2));
+% %     seedCol = round(props(sbiggest).Centroid(1));
+% % end
+% 
+% % using red component of an image
+% segIm = zeros(size(imPrep(:,:,1)));
+% Trg = 0.6*std(imPrep(:,:,1),[],'all');
+% while sum(segIm == 1)< 0.00005*m*n
+% % segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
+% segIm = regiongrowing(imPrep(:,:,1),seedRow,seedCol,Trg);
+% Trg = 1.25*Trg;
+% end
 
 % % using grayscale image
 % segIm = zeros(size(imPrepGray));
@@ -78,7 +78,7 @@ end
 % end
 % segIm = grayconnected(imPrepLab(:,:,2),seedRow,seedCol,0.5*std(imPrepGray,[],'all'));
 
-binaryMap = imfill(segIm,'holes');
+% binaryMap = imfill(segIm,'holes');
 
 
 % %% Hough transform for circles
