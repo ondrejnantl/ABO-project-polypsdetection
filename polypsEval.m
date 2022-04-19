@@ -1,4 +1,4 @@
-function [resultCell,Se,PPV,diceCoef,IoU] = polypsEval(datasetPath)
+function [resultCell,Se,PPV,diceCoef,IoU,P,N] = polypsEval(datasetPath)
 % This function can be used for evaluating the performance of polyp
 % detection/segmentation algorithm
 % 
@@ -44,10 +44,11 @@ IoU = zeros(numImages,1);
 TP = 0; FP = 0; FN = 0;
 
 for imIter = 1:numImages
-    % loading one image and its ground truth mask 
+    % loading one image and its ground truth mask
     image = readimage(imDS,imIter);
     GT = im2double(readimage(groundTruthDS,imIter));
     GT(GT<1) = 0;
+    disp(imIter)
     % cropping of the black frame
     clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow GTCropped GTCroppedRow
     imHSV = rgb2hsv(image); % transfer into HSV
@@ -71,9 +72,12 @@ for imIter = 1:numImages
         end
     end
     % analysis of the image using our algorithm
-    % this is important     
-%     resultDataMatrix(:,:,imIter) = detectPolyps(imCropped,bEdgeMask3);
+    % this is important
+    %     resultDataMatrix(:,:,imIter) = detectPolyps(imCropped,bEdgeMask3);
     resultCell{imIter} = detectPolyps(imCropped,bEdgeMask3);
+
+    %     figure(1)
+    %     imshow(imCropped.*resultCell{imIter})
     % evaluation of our algorithm using Dice and Jaccard coefficients
 %     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
 %     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
@@ -91,16 +95,26 @@ for imIter = 1:numImages
             FP = FP + 1;
         end
     end
-    
+    % Honza pokus
+    new = resultCell{imIter}+logical(GTCropped);
+    prekryv = sum(new==2);
+    mimo = sum(new==0);
+    maska = sum(logical(GTCropped)==1);
+    maska2 = sum(logical(GTCropped)==0);
+    P{imIter} = prekryv/maska;
+    N{imIter} = mimo/maska2;
 end
+P = mean(cell2mat(P));
+N = mean(cell2mat(N));
 Se = TP/(TP + FN);
 PPV = TP/(TP + FP);
 end
 
 function image = read2double(path)
-    image = im2double(imread(path));
+image = im2double(imread(path));
 end
 
 % function image = read2gray(path)
 %     image = rgb2gray(im2double(imread(path)));
 % end
+
