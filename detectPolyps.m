@@ -63,7 +63,8 @@ seedCol = round(props(biggest).Centroid(1));
 segIm = zeros(size(imPrep(:,:,1)));
 Trg = 0.6*std(imPrep(:,:,1),[],'all');
 while sum(segIm == 1)< 0.00005*m*n
-segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
+% segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
+segIm = regiongrowing(imPrep(:,:,1),seedRow,seedCol,Trg);
 Trg = 1.25*Trg;
 end
 

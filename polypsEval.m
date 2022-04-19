@@ -20,7 +20,13 @@ function [resultCell,Se,PPV,diceCoef,IoU] = polypsEval(datasetPath)
 % 
 % PPV - calculated positive predictive value as decimal number
 % 
-% IoU - numeric array
+% IoU - numeric array containing calculated value of Intersection over
+% Union for every input image individually
+% 
+% diceCoef - numeric array containing calculated value of Sorensen-Dice
+% coefficient for every input image individually
+% 
+% -------------------------------------------------------------------------
 % Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
 % =========================================================================
 % Gaining the names of images  - original and ground truth
