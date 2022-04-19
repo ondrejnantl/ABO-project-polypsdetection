@@ -1,4 +1,4 @@
-function [resultCell,Se,PPV,diceCoef,IoU] = polypsEval(datasetPath)
+function [resultCell,Se,PPV,diceCoef,IoU,P,N] = polypsEval(datasetPath)
 % This function can be used for evaluating the performance of polyp
 % detection/segmentation algorithm
 %
@@ -51,8 +51,8 @@ for imIter = 1:numImages
     %     resultDataMatrix(:,:,imIter) = detectPolyps(imCropped,bEdgeMask3);
     resultCell{imIter} = detectPolyps(imCropped,bEdgeMask3);
 
-    figure(1)
-    imshow(imCropped.*resultCell{imIter})
+    %     figure(1)
+    %     imshow(imCropped.*resultCell{imIter})
     % evaluation of our algorithm using Dice and Jaccard coefficients
     %     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
     %     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
@@ -70,12 +70,19 @@ for imIter = 1:numImages
             FP = FP + 1;
         end
     end
-
+    % Honza pokus
+    new = resultCell{imIter}+logical(GTCropped);
+    prekryv = sum(new==2);
+    mimo = sum(new==0);
+    maska = sum(logical(GTCropped)==1);
+    maska2 = sum(logical(GTCropped)==0);
+    P{imIter} = prekryv/maska;
+    N{imIter} = mimo/maska2;
 end
+P = mean(cell2mat(P));
+N = mean(cell2mat(N));
 Se = TP/(TP + FN);
 PPV = TP/(TP + FP);
-
-
 end
 
 function image = read2double(path)

@@ -5,12 +5,12 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
 % =========================================================================
 %% elimination of specular highlights and correction of variant lighting
-% elimination of specular highlights
+% % elimination of specular highlights
 % pm = rangefilt(rgb2gray(inputImage),true(7));
 % T = graythresh(pm);
 % reflMask = imbinarize(imfill(pm,'holes'),T);
 % imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5);
-
+% 
 % % correction of variant lighting
 % [m,n,o] = size(imCropped);
 % mm = zeros(m,n,o);
