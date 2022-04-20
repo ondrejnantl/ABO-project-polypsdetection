@@ -13,30 +13,34 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % the input image (it is necessary to avoid inpainting black edges)
 %
 % Output:
-% binaryMap - estimated average respiratory rate as double
+% binaryMap - binary mask of segmented polyp as a matrix
 % -------------------------------------------------------------------------
 % Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
 %% elimination of specular highlights and correction of variant lighting
 
 % % elimination of specular highlights
-% pm = rangefilt(rgb2gray(inputImage),true(7));
-% T = graythresh(pm);
-% reflMask = imbinarize(imfill(pm,'holes'),T);
-% imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5);
+% pm = rangefilt(rgb2gray(inputImage),true(7)); %finding regions with very big dynamic range
+% T = graythresh(pm); % estimating threshold for extracting only specular highlights locations
+% reflMask = imbinarize(imfill(pm,'holes'),T); % extracting only specular highlights locations
+% imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5); % inpaiting the specular highlights
 % 
 % % correction of variant lighting
 % [m,n,o] = size(imCropped);
 % mm = zeros(m,n,o);
 % N = 20;
 % meanMask = 1/(N^2).*ones(N,N);
+% % calculating local mean in 20x20 window
 % for j = 1:o
 %     mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
 % end
+% % subtracting mean image
 % imPrep = imCropped - mm;
+% % transforming into different color systems
 % % imPrepLab = rgb2lab(imPrep);
 % imPrepGray = rgb2gray(imPrep);
-% %% hysteresis thresholding
+% imPrepHSV = rgb2hsv(imPrep);
+%% hysteresis thresholding
 % % using red component of an image
 % T = multithresh(imPrep(:,:,1),2);
 % BW = hysthresh(imPrep(:,:,1),T(2),T(1));
@@ -81,12 +85,18 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % binaryMap = imfill(segIm,'holes');
 
 
-% %% Hough transform for circles
-% imEdge = edge(imPrepGray,'canny',[.03 .1],sqrt(2)); % constants set according to Sanchez2018
-% rs = 5:40; % range of diameters
+%% Hough transform for circles
+
+% stdPic = stdfilt(imPrep(:,:,3),true(5));
+% Ts = graythresh(stdPic);
+% Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
+% imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
+% % imEdge = edge(imPrepGray,'canny',[.03 .1],sqrt(2)); % constants set according to Sanchez2018
+% rs = 5:2:100; % range of radia
 % HS = zeros(size(imPrep,1),size(imPrep,2),length(rs));
 % r_ind = 1;
-% [X,Y] = find(imEdge == 1);
+% [X,Y] = find(imEdge == 1); % finding edges
+% % filling the Hough space
 % for r = rs
 %     tmp_c = gen_circle(r);
 %     for i = 1:length(X)
@@ -103,20 +113,29 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % % finding the center of the most probable circle in edge representation
 % [linInd] = find(HS == max(HS,[],'all'),1,'first');
 % [y,x,r] = ind2sub(size(HS),linInd); 
-% 
+% % 
 % % if length(x)>1 || length(y)>1
 % %     x = floor(mean(x));
 % %     y = floor(mean(y));
 % % end
-% % 
+% % % 
 % %% region growing
+% segIm = zeros(size(imPrep(:,:,3)));
+% Trg = 0.6*std(imPrep(:,:,3),[],'all');
+% while sum(segIm == 1)< 0.00005*m*n
+% segIm = grayconnected(imPrep(:,:,3),y,x,Trg);
+% % segIm = regiongrowing(imPrep(:,:,1),seedRow,seedCol,Trg);
+% Trg = 1.25*Trg;
+% end
+% binaryMap = imfill(segIm,'holes');
+
 % for i = 1:o
 % segIm(:,:,i) = grayconnected(imPrep(:,:,i),y,x,0.1*std(imPrepGray,[],'all')); % position is defined by Hough t.
 % end
 % sumRegion = reshape(sum(sum(segIm)),[3 1 1]);
 % [~,smallObjChannel] = min(sumRegion);
 % binaryMap = imfill(segIm(:,:,smallObjChannel),'holes');
-% % %% geometric contours
+%% geometric contours
 % % % finding the smallest object in 3 results of region growing
 % % sumRegion = reshape(sum(sum(segIm)),[3 1 1]);
 % % [~,smallObjChannel] = min(sumRegion);
@@ -125,9 +144,15 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 
 %% Method with hysteresis thresholding and Region Growing
 
+% inputImage=FClear(inputImage,bEdgeMask);
+% imPrep = FLight(inputImage);
+% [x,y]  = FHysThres(imPrep);
+% binaryMap = FRegionGrow(imPrep,x,y);
+%% Method with Hough Transform and Region Growing
+
 inputImage=FClear(inputImage,bEdgeMask);
 imPrep = FLight(inputImage);
-[x,y]  = FHysThres(imPrep);
+[x,y]  = FHouTrans(imPrep);
 binaryMap = FRegionGrow(imPrep,x,y);
 
 

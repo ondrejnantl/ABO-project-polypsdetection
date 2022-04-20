@@ -59,9 +59,10 @@ for imIter = 1:numImages
     end
     % cropping of the black frame
     clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow GTCropped GTCroppedRow
-    imHSV = rgb2hsv(image); % transfer into HSV
-    bEdgeMask = (imHSV(:,:,3) <= 0.2);
+    imHSV = rgb2hsv(image); % transfer into HSV color space
+    bEdgeMask = (imHSV(:,:,3) <= 0.2); % obtaining mask of black edge
     newRowCount = 0;
+    % cropping the rows which are only dark 
     for i = 1:size(bEdgeMask,1)
         if any(bEdgeMask(i,:) ~= 1)
             newRowCount = newRowCount + 1;
@@ -71,6 +72,7 @@ for imIter = 1:numImages
         end
     end
     newColCount = 0;
+    % cropping the colums which are only dark 
     for j = 1:size(bEdgeMask2,2)
         if any(bEdgeMask2(:,j) ~= 1)
             newColCount = newColCount + 1;
@@ -86,7 +88,7 @@ for imIter = 1:numImages
 
     %     figure(1)
     %     imshow(imCropped.*resultCell{imIter})
-    % evaluation of our algorithm using Dice and Jaccard coefficients
+    % evaluation of our algorithm using Dice and Jaccard (IoU) coefficients
 %     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
 %     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
     diceCoef(imIter) = dice(resultCell{imIter},logical(GTCropped));
@@ -112,6 +114,7 @@ for imIter = 1:numImages
     P{imIter} = prekryv/maska;
     N{imIter} = mimo/maska2;
 end
+% estimating the pixelwise and objectwise performance metrics
 P = mean(cell2mat(P));
 N = mean(cell2mat(N));
 Se = TP/(TP + FN);

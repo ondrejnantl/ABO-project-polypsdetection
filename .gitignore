@@ -1,5 +1,12 @@
 
 detectPolyps.asv
+FClear.asv
+FHouTrans.asv
+FHysThres.asv
+FLight.asv
+FRegionGrow.asv
+ParametricMap.asv
+ParametricOrig.asv
 polypsEval.asv
 Projekt1.asv
 trainRFcluster.asv

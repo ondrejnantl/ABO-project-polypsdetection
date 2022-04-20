@@ -1,18 +1,18 @@
-%% ABO - Projekt c.10 Polypy
-% @JanSima,@OndrejNantl
+%% Parametric Field for polyps compared to background
+% @JanSima,@OndrejNantl,@TerezieDobrovolna
 clear all; clc;
-%% nacteni
-% Zmen si cestu k souboru!
+%% loading
+% Change the pathway to the dataset!
 pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Original\';
 pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
 a = dir([pathCVC_Orig '*.tif']);
 n = numel(a);
 ParametricField = [];
-% Gray - šedotónovy obraz
-% RGB - barevné kanály
+% Gray - grayscale image
+% R,G,B - color channels
 % BG - background
-% - a / - rozdíl a poměr mezi polypem a pozadím
-% Mean, SD, E - průměr, směrodatná odchylka a entopie
+% - a / - difference a ratio between polyp and background
+% Mean, SD, E - mean, standard deviation and entropy
 Labels = {'MeanGray','MeanGrayBG','MeanGray-','MeanGray/','MeanR',...
     'MeanRBG','MeanR-','MeanR/','MeanG','MeanGBG','MeanG-','MeanG/',...
     'MeanB','MeanBBG','MeanB-','MeanB/','SDGray','SDGrayBG','SDGray-',...
@@ -25,20 +25,22 @@ for idx = 1:n
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
     mask = im2double(imread([pathCVC_Mask, num2str(idx) '.tif']));
 
-    % odstraneni ramecku
-    clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow maskCropped maskCroppedRow
-    imHSV = rgb2hsv(imColor); % prevod do HSV
-    bEdgeMask = (imHSV(:,:,3) <= 0.2); % konstanta podle Sanchez2018
+    % removal of black edge
+    clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow %maskCropped maskCroppedRow
+    imHSV = rgb2hsv(imColor); % transfer into HSV color space
+    bEdgeMask = (imHSV(:,:,3) <= 0.2); % obtaining mask of black edge
     newRowCount = 0;
+    % cropping the rows which are only dark 
     for i = 1:size(bEdgeMask,1)
         if any(bEdgeMask(i,:) ~= 1)
             newRowCount = newRowCount + 1;
             bEdgeMask2(newRowCount,:) = bEdgeMask(i,:);
-            imCroppedRow(newRowCount,:,:) = imColor(i,:,:);
+            imCroppedRow(newRowCount,:,:) = image(i,:,:);
             maskCroppedRow(newRowCount,:) = mask(i,:);
         end
     end
     newColCount = 0;
+    % cropping the colums which are only dark 
     for j = 1:size(bEdgeMask2,2)
         if any(bEdgeMask2(:,j) ~= 1)
             newColCount = newColCount + 1;
@@ -47,10 +49,11 @@ for idx = 1:n
             maskCropped(:,newColCount) = maskCroppedRow(:,j);
         end
     end
-    % převod na gray
+    % transfer into grayscale
     imGray = rgb2gray(im2double(imCropped));
 
-    % Výpočet mean, median a SD v RGB a v šedotónovém obraze + rozdíl
+    % % Calculating mean, SD and entropy in RGB and grayscale image +
+    % difference and ratio
     % Mean imGray
     ParametricField(idx,1) = mean(mean(imGray(maskCropped==1)));
     ParametricField(idx,2) = mean(mean(imGray(maskCropped==0)));
@@ -126,10 +129,10 @@ for idx = 1:n
     ParametricField(idx,48) = ParametricField(idx,46)/ParametricField(idx,45);
 end
 
-%% ulozeni a vykresleni
+%% saving and plotting
 save("Parametric_Field","ParametricField","Labels")
 
-% nestandardizovane
+% nonstandardized
 boxplot(ParametricField,'Labels',Labels)
-% standardizovane
+% standardized
 boxplot(zscore(ParametricField),'Labels',Labels)

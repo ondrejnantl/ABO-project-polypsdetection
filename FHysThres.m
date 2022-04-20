@@ -1,15 +1,31 @@
 function [x,y]  = FHysThres(imPrep)
-imPre = rgb2gray(im2double(imPrep));
-thresholds = multithresh(imPre,2);
+% This function performs extraction of seed coordinates for region growing
+% from preprocessed RGB colonoscopy image using hysteresis thresholding and
+% finding centroid of biggest obtained object
+% -------------------------------------------------------------------------
+% Input: 
+% imPrep - input preprocessed RGB image obtained during colonoscopy (after 
+% cropping in evaluation function, removal of specular highlights and 
+% adjustment of lighting)
+%
+% Output:
+% x - x coordinate of seed for region growing
+% y - y coordinate of seed for region growing
+% -------------------------------------------------------------------------
+% Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
+% =========================================================================
+imPre = rgb2gray(im2double(imPrep));% converting input image into grayscale
+thresholds = multithresh(imPre,2); % obtaining thresholds using Otsu method
 T1 = thresholds(2);
 T2 = thresholds(1);
-h=hyst_thresh(imPre,T1,T2);
+h=hyst_thresh(imPre,T1,T2); % hysteresis thresholding using downloaded function
 
+% finding the centroid of largest segmented object using region props 
 centers = regionprops(h);
 loc = find(max([centers.Area]));
 positions = centers(loc).Centroid;
-x = positions(1);
-y = positions(2);
+x = round(positions(1));
+y = round(positions(2));
 % figure
 % imshow(imPrep.*~h,[])
 % hold on
