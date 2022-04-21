@@ -19,27 +19,27 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % =========================================================================
 %% elimination of specular highlights and correction of variant lighting
 
-% % elimination of specular highlights
-% pm = rangefilt(rgb2gray(inputImage),true(7)); %finding regions with very big dynamic range
-% T = graythresh(pm); % estimating threshold for extracting only specular highlights locations
-% reflMask = imbinarize(imfill(pm,'holes'),T); % extracting only specular highlights locations
-% imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5); % inpaiting the specular highlights
-% 
-% % correction of variant lighting
-% [m,n,o] = size(imCropped);
-% mm = zeros(m,n,o);
-% N = 20;
-% meanMask = 1/(N^2).*ones(N,N);
-% % calculating local mean in 20x20 window
-% for j = 1:o
-%     mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
-% end
-% % subtracting mean image
-% imPrep = imCropped - mm;
-% % transforming into different color systems
-% % imPrepLab = rgb2lab(imPrep);
-% imPrepGray = rgb2gray(imPrep);
-% imPrepHSV = rgb2hsv(imPrep);
+% elimination of specular highlights
+pm = rangefilt(rgb2gray(inputImage),true(7)); %finding regions with very big dynamic range
+T = graythresh(pm); % estimating threshold for extracting only specular highlights locations
+reflMask = imbinarize(imfill(pm,'holes'),T); % extracting only specular highlights locations
+imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5); % inpaiting the specular highlights
+
+% correction of variant lighting
+[m,n,o] = size(imCropped);
+mm = zeros(m,n,o);
+N = 20;
+meanMask = 1/(N^2).*ones(N,N);
+% calculating local mean in 20x20 window
+for j = 1:o
+    mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
+end
+% subtracting mean image
+imPrep = imCropped - mm;
+% transforming into different color systems
+% imPrepLab = rgb2lab(imPrep);
+imPrepGray = rgb2gray(imPrep);
+imPrepHSV = rgb2hsv(imPrep);
 %% hysteresis thresholding
 % % using red component of an image
 % T = multithresh(imPrep(:,:,1),2);
@@ -87,7 +87,7 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 
 %% Hough transform for circles
 
-% stdPic = stdfilt(imPrep(:,:,3),true(5));
+% stdPic = stdfilt(imPrep(:,:,1),true(5));
 % Ts = graythresh(stdPic);
 % Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
 % imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
@@ -113,17 +113,17 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % % finding the center of the most probable circle in edge representation
 % [linInd] = find(HS == max(HS,[],'all'),1,'first');
 % [y,x,r] = ind2sub(size(HS),linInd); 
+% 
+% if length(x)>1 || length(y)>1
+%     x = floor(mean(x));
+%     y = floor(mean(y));
+% end
 % % 
-% % if length(x)>1 || length(y)>1
-% %     x = floor(mean(x));
-% %     y = floor(mean(y));
-% % end
-% % % 
-% %% region growing
-% segIm = zeros(size(imPrep(:,:,3)));
-% Trg = 0.6*std(imPrep(:,:,3),[],'all');
+%% region growing
+% segIm = zeros(size(imPrep(:,:,1)));
+% Trg = 1.2*std(imPrep(:,:,1),[],'all');
 % while sum(segIm == 1)< 0.00005*m*n
-% segIm = grayconnected(imPrep(:,:,3),y,x,Trg);
+% segIm = grayconnected(imPrep(:,:,1),y,x,Trg);
 % % segIm = regiongrowing(imPrep(:,:,1),seedRow,seedCol,Trg);
 % Trg = 1.25*Trg;
 % end
@@ -151,6 +151,7 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 %% Method with Hough Transform and Region Growing
 
 inputImage=FClear(inputImage,bEdgeMask);
+% imPrep = inputImage;
 imPrep = FLight(inputImage);
 [x,y]  = FHouTrans(imPrep);
 binaryMap = FRegionGrow(imPrep,x,y);

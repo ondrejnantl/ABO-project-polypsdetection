@@ -18,10 +18,10 @@ function [x,y,r] = FHouTrans(imPrep)
 % =========================================================================
 imPrepHSV = rgb2hsv(imPrep);
 % variant using local standard deviation thresholding
-stdPic = stdfilt(imPrep(:,:,3),true(5));
+stdPic = stdfilt(imPrep(:,:,1),true(5));
 Ts = graythresh(stdPic); % Otsu method
-Tv = graythresh(imPrepHSV(:,:,1)); % elimination of edges in dark background
-imEdge = (stdPic>Ts & imPrepHSV(:,:,1)>Tv);
+Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
+imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
 
 % imEdge = edge(imPrepGray,'canny',[.03 .1],sqrt(2)); % variant using Canny detector
 % imEdge = edge(imPrepLab(:,:,3),'canny'); % variant using Lab

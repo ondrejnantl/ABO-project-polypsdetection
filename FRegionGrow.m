@@ -22,8 +22,8 @@ function [final] = FRegionGrow(imPrep,x,y)
 % segmenting using red component of an input image
 segIm = zeros(size(imPrep(:,:,1)));
 % threshold estimated from standard deviation
-Trg = 0.9*std(imPrep(:,:,1),[],'all');
-% change threshold until the object is at least of 0.00005 of size on the
+Trg = 0.8*std(imPrep(:,:,1),[],'all');
+% change threshold and segment again until the object is at least of 0.00005 of size on the
 % input image
 while sum(segIm == 1)< 0.00005*m*n
 % segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
