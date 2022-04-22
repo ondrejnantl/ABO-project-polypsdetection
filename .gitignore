@@ -4,9 +4,11 @@ FClear.asv
 FHouTrans.asv
 FHysThres.asv
 FLight.asv
+FMorphGrad.asv
 FRegionGrow.asv
 ParametricMap.asv
 ParametricOrig.asv
 polypsEval.asv
 Projekt1.asv
+trainClassificator.asv
 trainRFcluster.asv

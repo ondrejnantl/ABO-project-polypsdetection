@@ -1,4 +1,4 @@
-function [x,y,r] = FHouTrans(imPrep)
+function [x,y,r,HTMax] = FHouTrans(imPrep)
 % This function performs estimation of seed coordinates for region growing
 % from preprocessed RGB colonoscopy image using Hough transform for circles
 % -------------------------------------------------------------------------
@@ -10,20 +10,27 @@ function [x,y,r] = FHouTrans(imPrep)
 % Output:
 % x - x coordinate of center of the most likely present circle in the image 
 % (the seed)
+% 
 % y - y coordinate of center of the most likely present circle in the image
 % (the seed)
+% 
 % r - diameter of the most likely present circle in the image
 % -------------------------------------------------------------------------
 % Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
 imPrepHSV = rgb2hsv(imPrep);
-% variant using local standard deviation thresholding
-stdPic = stdfilt(imPrep(:,:,1),true(5));
-Ts = graythresh(stdPic); % Otsu method
-Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
-imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
+% % variant using local standard deviation thresholding
+% stdPic = stdfilt(imPrep(:,:,1),true(5));
+% Ts = graythresh(stdPic); % Otsu method
+% Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
+% imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
 
-% imEdge = edge(imPrepGray,'canny',[.03 .1],sqrt(2)); % variant using Canny detector
+MorGrad = imdilate(imPrep(:,:,1),strel('disk',3))- imerode(imPrep(:,:,1),strel('disk',3));
+Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
+Ts = graythresh(MorGrad); % Otsu method
+imEdge = (MorGrad>Ts & imPrepHSV(:,:,3)>Tv);
+
+% imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2)); % variant using Canny detector
 % imEdge = edge(imPrepLab(:,:,3),'canny'); % variant using Lab
 
 rs = 5:2:100; % range of radia
@@ -46,7 +53,8 @@ for r = rs
     r_ind = r_ind + 1;
 end
 % finding the center of the most probable circle in edge representation
-[linInd] = find(HS == max(HS,[],'all'),1,'first');
+HTMax = max(HS,[],'all');
+[linInd] = find(HS == HTMax,1,'first');
 [y,x,r] = ind2sub(size(HS),linInd); 
 % 
 % if length(x)>1 || length(y)>1

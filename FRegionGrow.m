@@ -1,4 +1,4 @@
-function [final] = FRegionGrow(imPrep,x,y)
+function [final,areaMean,areaSize] = FRegionGrow(imPrep,x,y)
 % This function performs segmentation of polyp in preprocessed RGB 
 % colonoscopy image using region growing technique with seed coordinates
 % obtained using function FHysThres
@@ -9,12 +9,16 @@ function [final] = FRegionGrow(imPrep,x,y)
 % adjustment of lighting)
 %
 % x - x coordinate of seed for region growing
-
+% 
 % y - y coordinate of seed for region growing
-
+% 
 % Output:
 % final - final mask of segmented polyp after region growing and final 
 % adjustments
+% 
+% areaMean - mean value of area which is assigned as potential polyp region
+% 
+% areaSize - size of area which is assigned as potential polyp region
 % -------------------------------------------------------------------------
 % Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
@@ -31,9 +35,29 @@ segIm = grayconnected(imPrep(:,:,1),y,x,Trg);
 Trg = 1.25*Trg;
 end
 
+% % segmenting using grayscale image
+% imPrepGray = rgb2gray(imPrep);
+% segIm = zeros(size(imPrepGray));
+% % threshold estimated from standard deviation
+% Trg = 0.8*std(imPrepGray,[],'all');
+% % change threshold and segment again until the object is at least of 0.00005 of size on the
+% % input image
+% while sum(segIm == 1)< 0.00005*m*n
+% % segIm = grayconnected(imPrep(:,:,1),seedRow,seedCol,Trg);
+% segIm = grayconnected(imPrepGray,y,x,Trg);
+% Trg = 1.25*Trg;
+% end
+
+
 % final adjustments
 final = imfill(segIm,'holes');
 
+%% features for data analysis
+imPrepGray = rgb2gray(imPrep);
+areaPixels = imPrepGray(final);
+areaSize = sum(final(:));
+areaMean = mean(areaPixels(:));
+%% commented block
 % seedRow = randi(size(imPrep,1)); % je nutne vymyslet jak zjistit pozici seminka
 % seedCol = randi(size(imPrep,2));
 % [~,seedRow] = max(sum(imPrep(:,:,1),2)); % je nutne vymyslet jak zjistit pozici seminka

@@ -1,4 +1,4 @@
-function [resultCell,Se,PPV,diceCoef,IoU,P,N] = polypsEval(datasetPath)
+function [resultCell,Se,PPV,diceCoef,IoU,P,N,imList] = polypsEval(datasetPath)
 % This function can be used for evaluating the performance of polyp
 % detection/segmentation algorithm
 % 
@@ -31,6 +31,8 @@ function [resultCell,Se,PPV,diceCoef,IoU,P,N] = polypsEval(datasetPath)
 % 
 % N - the ratio between negative pixels in both masks and the number of
 % positive pixels in GT mask
+% 
+% imList - list of images in the dataset
 % -------------------------------------------------------------------------
 % Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
 % =========================================================================
@@ -119,6 +121,7 @@ P = mean(cell2mat(P));
 N = mean(cell2mat(N));
 Se = TP/(TP + FN);
 PPV = TP/(TP + FP);
+imList = imDS.Files;
 end
 
 function image = read2double(path)

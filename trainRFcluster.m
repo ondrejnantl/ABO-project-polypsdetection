@@ -49,23 +49,23 @@ end
 
 %clustering into 4 clusters
 k = 4;
-[imClusters,centroids] = kmeans(ParametricFieldOrig,k);
+[imClusters,centroids] = kmeans(ParFieldN,k);
 centroidsN = (centroids - repmat(mu,k,1))./repmat(sigma,k,1);
 
 % Plotting the values of features for centroids
 figure
-subplot 211
+% subplot 211
 plot(centroids'); 
 legend({'Cluster 1','Cluster 2','Cluster 3','Cluster 4'});
 title('Hodnoty jednotlivých příznaků pro centroidy - nenormalizovano');
 xticks(1:12)
 xticklabels(Labels)
-subplot 212
-plot(centroidsN'); 
-legend({'Cluster 1','Cluster 2','Cluster 3','Cluster 4'});
-title('Hodnoty jednotlivých příznaků pro centroidy - normalizovano');
-xticks(1:12)
-xticklabels(Labels)
+% subplot 212
+% plot(centroidsN'); 
+% legend({'Cluster 1','Cluster 2','Cluster 3','Cluster 4'});
+% title('Hodnoty jednotlivých příznaků pro centroidy - normalizovano');
+% xticks(1:12)
+% xticklabels(Labels)
 
 
 % extracting the names of images in the clusters

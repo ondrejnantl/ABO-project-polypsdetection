@@ -19,27 +19,27 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % =========================================================================
 %% elimination of specular highlights and correction of variant lighting
 
-% elimination of specular highlights
-pm = rangefilt(rgb2gray(inputImage),true(7)); %finding regions with very big dynamic range
-T = graythresh(pm); % estimating threshold for extracting only specular highlights locations
-reflMask = imbinarize(imfill(pm,'holes'),T); % extracting only specular highlights locations
-imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5); % inpaiting the specular highlights
-
-% correction of variant lighting
-[m,n,o] = size(imCropped);
-mm = zeros(m,n,o);
-N = 20;
-meanMask = 1/(N^2).*ones(N,N);
-% calculating local mean in 20x20 window
-for j = 1:o
-    mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
-end
-% subtracting mean image
-imPrep = imCropped - mm;
-% transforming into different color systems
+% % elimination of specular highlights
+% pm = rangefilt(rgb2gray(inputImage),true(7)); %finding regions with very big dynamic range
+% T = graythresh(pm); % estimating threshold for extracting only specular highlights locations
+% reflMask = imbinarize(imfill(pm,'holes'),T); % extracting only specular highlights locations
+% imCropped = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5); % inpaiting the specular highlights
+% 
+% % correction of variant lighting
+% [m,n,o] = size(imCropped);
+% mm = zeros(m,n,o);
+% N = 20;
+% meanMask = 1/(N^2).*ones(N,N);
+% % calculating local mean in 20x20 window
+% for j = 1:o
+%     mm(:,:,j) = 0.3.*conv2(imCropped(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
+% end
+% % subtracting mean image
+% imPrep = imCropped - mm;
+% % transforming into different color systems
 % imPrepLab = rgb2lab(imPrep);
-imPrepGray = rgb2gray(imPrep);
-imPrepHSV = rgb2hsv(imPrep);
+% imPrepGray = rgb2gray(imPrep);
+% imPrepHSV = rgb2hsv(imPrep);
 %% hysteresis thresholding
 % % using red component of an image
 % T = multithresh(imPrep(:,:,1),2);

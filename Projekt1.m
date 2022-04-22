@@ -5,7 +5,7 @@ clear all; clc;
 % Zmen si cestu k souboru!
 pathCVC_Orig = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Original\';
 pathCVC_Mask = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Ground Truth\';
-for idx = 239
+for idx = 194
 
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
@@ -215,6 +215,17 @@ figure(4)
 HR=edge(grad,'canny');
 imshow(HR,[])
 title('cannyho detector')
+%% morfologicky gradient
+MorGrad = imdilate(imPrep(:,:,1),strel('disk',3))- imerode(imPrep(:,:,1),strel('disk',3));
+imshow(hyst_thresh(MorGrad,0.09,0.07),[])
+h = hyst_thresh(MorGrad,0.2,0.17);
+h = imerode(h,strel('line',7,7));
+h = bwareafilt(h,[100 m*n]);
+imshow(h)
+props = regionprops(h,'Area','Centroid','Perimeter','ConvexImage');
+ratio = [props.Area]./([props.Perimeter].^2);
+[~,idx] = max(ratio);
+imshow(props(idx).ConvexImage)
 %% mikrostrukturni analyza, clustering a nasledna analyza s geometrickou konturou
 load('Laws.mat')
 imPrepV = imPrepLab(:,:,2);
