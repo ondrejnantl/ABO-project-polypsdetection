@@ -31,10 +31,14 @@ loc = find(max([centers.Area]));
 positions = centers(loc).Centroid;
 x = round(positions(1));
 y = round(positions(2));
-% figure
-% imshow(imPrep.*~h,[])
-% hold on
-% plot(x,y,'r+','LineWidth',20)
+
+% % random seed in region
+% hBigg = bwareafilt(h,1);
+% [Y,X] = find(hBigg == 1); % finding edges
+% rndIdx = randi(length(X),5,1);
+% x = X(rndIdx);
+% y = Y(rndIdx);
+
 %% features for data analysis
 h2 = bwareafilt(h,1);
 areaPixels = imPre(h2);

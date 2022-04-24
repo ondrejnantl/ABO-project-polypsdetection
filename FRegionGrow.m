@@ -50,11 +50,12 @@ end
 
 
 % final adjustments
-final = imfill(segIm,'holes');
+% final = imfill(segIm,'holes');
+final = bwconvhull(segIm,'objects');
 
 %% features for data analysis
-imPrepGray = rgb2gray(imPrep);
-areaPixels = imPrepGray(final);
+imPrepRed = imPrep(:,:,1);
+areaPixels = imPrepRed(final);
 areaSize = sum(final(:));
 areaMean = mean(areaPixels(:));
 %% commented block

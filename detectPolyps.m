@@ -17,6 +17,21 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % -------------------------------------------------------------------------
 % Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
+%% Method with hysteresis thresholding and Region Growing
+
+% inputImage=FClear(inputImage,bEdgeMask);
+% imPrep = FLight(inputImage);
+% [x,y]  = FHysThres(imPrep);
+% binaryMap = FRegionGrow(imPrep,x,y);
+%% Method with Hough Transform and Region Growing
+
+inputImage=FClear(inputImage,bEdgeMask);
+% imPrep = inputImage;
+imPrep = FLight(inputImage);
+[x,y]  = FHouTrans(imPrep);
+binaryMap = FRegionGrow(imPrep,x,y);
+
+%% commented blocks
 %% elimination of specular highlights and correction of variant lighting
 
 % % elimination of specular highlights
@@ -141,21 +156,6 @@ function [binaryMap] = detectPolyps(inputImage,bEdgeMask)
 % % [~,smallObjChannel] = min(sumRegion);
 % % % level sets
 % % binaryMap = activecontour(rgb2gray(imCropped),imdilate(segIm(:,:,smallObjChannel),[1 1 1; 1 1 1; 1 1 1]));
-
-%% Method with hysteresis thresholding and Region Growing
-
-% inputImage=FClear(inputImage,bEdgeMask);
-% imPrep = FLight(inputImage);
-% [x,y]  = FHysThres(imPrep);
-% binaryMap = FRegionGrow(imPrep,x,y);
-%% Method with Hough Transform and Region Growing
-
-inputImage=FClear(inputImage,bEdgeMask);
-% imPrep = inputImage;
-imPrep = FLight(inputImage);
-[x,y]  = FHouTrans(imPrep);
-binaryMap = FRegionGrow(imPrep,x,y);
-
 
 end
 

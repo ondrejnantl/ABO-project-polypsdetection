@@ -19,18 +19,20 @@ function [x,y,r,HTMax] = FHouTrans(imPrep)
 % Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
 imPrepHSV = rgb2hsv(imPrep);
-% % variant using local standard deviation thresholding
-% stdPic = stdfilt(imPrep(:,:,1),true(5));
-% Ts = graythresh(stdPic); % Otsu method
-% Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
-% imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
-
-MorGrad = imdilate(imPrep(:,:,1),strel('disk',3))- imerode(imPrep(:,:,1),strel('disk',3));
+% variant using local standard deviation thresholding
+stdPic = stdfilt(imPrep(:,:,1),true(5));
+Ts = graythresh(stdPic); % Otsu method
 Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
-Ts = graythresh(MorGrad); % Otsu method
-imEdge = (MorGrad>Ts & imPrepHSV(:,:,3)>Tv);
+imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
+% imEdge = imopen(imEdge,strel('disk',1));
+
+% MorGrad = imdilate(imPrep(:,:,1),strel('disk',3))- imerode(imPrep(:,:,1),strel('disk',3));
+% Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
+% Ts = graythresh(MorGrad); % Otsu method
+% imEdge = (MorGrad>Ts & imPrepHSV(:,:,3)>Tv);
 
 % imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2)); % variant using Canny detector
+% imEdge = edge(imopen(imPrep(:,:,1),strel('disk',1)),'canny'); % variant using Canny detector
 % imEdge = edge(imPrepLab(:,:,3),'canny'); % variant using Lab
 
 rs = 5:2:100; % range of radia
@@ -52,14 +54,9 @@ for r = rs
     end
     r_ind = r_ind + 1;
 end
-% finding the center of the most probable circle in edge representation
+% % finding the center of the most probable circle in edge representation
 HTMax = max(HS,[],'all');
 [linInd] = find(HS == HTMax,1,'first');
 [y,x,r] = ind2sub(size(HS),linInd); 
-% 
-% if length(x)>1 || length(y)>1
-%     x = floor(mean(x));
-%     y = floor(mean(y));
-% end
-% % 
+
 end
