@@ -24,18 +24,8 @@ stdPic = stdfilt(imPrep(:,:,1),true(5));
 Ts = graythresh(stdPic); % Otsu method
 Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
 imEdge = (stdPic>Ts & imPrepHSV(:,:,3)>Tv);
-% imEdge = imopen(imEdge,strel('disk',1));
 
-% MorGrad = imdilate(imPrep(:,:,1),strel('disk',3))- imerode(imPrep(:,:,1),strel('disk',3));
-% Tv = graythresh(imPrepHSV(:,:,3)); % elimination of edges in dark background
-% Ts = graythresh(MorGrad); % Otsu method
-% imEdge = (MorGrad>Ts & imPrepHSV(:,:,3)>Tv);
-
-% imEdge = edge(rgb2gray(imPrep),'canny',[.03 .1],sqrt(2)); % variant using Canny detector
-% imEdge = edge(imopen(imPrep(:,:,1),strel('disk',1)),'canny'); % variant using Canny detector
-% imEdge = edge(imPrepLab(:,:,3),'canny'); % variant using Lab
-
-rs = 5:2:100; % range of radia
+rs = 10:2:100; % range of radia
 HS = zeros(size(imPrep,1),size(imPrep,2),length(rs));
 r_ind = 1;
 [X,Y] = find(imEdge == 1); % finding edges
@@ -54,9 +44,10 @@ for r = rs
     end
     r_ind = r_ind + 1;
 end
-% % finding the center of the most probable circle in edge representation
+% finding the center of the most probable circle in edge representation
+% as maxima of Hough space
 HTMax = max(HS,[],'all');
-[linInd] = find(HS == HTMax,1,'first');
+[linInd] = find(HS == HTMax,1,'last');
 [y,x,r] = ind2sub(size(HS),linInd); 
 
 end

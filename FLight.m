@@ -17,12 +17,8 @@ N = 20; % size of the local neighborhood
 meanMask = 1/(N^2).*ones(N,N);
 % calculating local mean in 20x20 window
 for j = 1:o
-    mm(:,:,j) = 0.3.*conv2(inputImage(:,:,j),meanMask,'same'); % slight change in constant compared to Sanchez2018
+    mm(:,:,j) = 0.3.*conv2(inputImage(:,:,j),meanMask,'same'); % inspired by Sanchez2018
 end
 % subtracting local mean image
 imPrep = inputImage - mm;
-% transforming into different color systems
-% imPrepLab = rgb2lab(imPrep);
-% imPrepGray = rgb2gray(imPrep);
-% imPrepHSV = rgb2hsv(imPrep);
 end

@@ -1,11 +1,11 @@
-function [resultCell,Se,PPV,diceCoef,IoU,P,N,imList] = polypsEval(datasetPath)
+function [resultCell,Se,PPV,diceCoef,IoU,Acc,imList] = polypsEval(datasetPath)
 % This function can be used for evaluating the performance of polyp
 % detection/segmentation algorithm
 % 
 % All black edges in images are cropped, then evaluated using our detection
 % and segmentation method a the performance of our method is evaluated
 % using sensitivity, positive predictive value (both for object-wise
-% evaluation), IoU and Dice coefficient (metrics for evaluation of
+% evaluation), IoU and Dice coefficient and pixel accuracy (metrics for evaluation of
 % segmentation)
 % 
 % Input:
@@ -26,28 +26,27 @@ function [resultCell,Se,PPV,diceCoef,IoU,P,N,imList] = polypsEval(datasetPath)
 % diceCoef - numeric array containing calculated value of Sorensen-Dice
 % coefficient for every input image individually
 % 
-% P - the ratio between positive pixels in both masks and the number of
-% positive pixels in GT mask
-% 
-% N - the ratio between negative pixels in both masks and the number of
-% positive pixels in GT mask
+% Acc - numeric array containing calculated value of pixel accuracy
+% coefficient for every input image individually
 % 
 % imList - list of images in the dataset
 % -------------------------------------------------------------------------
 % Authors: Ondřej Nantl, Terezie Dobrovolná, Jan Šíma
 % =========================================================================
 % Gaining the names of images  - original and ground truth
-imDS = imageDatastore([datasetPath '\Original'],'ReadFcn', @read2double);%,'ReadFcn', @read2gray
+imDS = imageDatastore([datasetPath '\Original'],'ReadFcn', @read2double);
 groundTruthDS = imageDatastore([datasetPath '\Ground Truth']);
 
 % Obtaining information about dimensions of input images and their count
-% imForDim = size(imread(imDS.Files{1}));
 numImages = size(imDS.Files,1);
 
-% resultDataMatrix = double(zeros(imForDim(1),imForDim(2),numImages));
+% prealocating variables for output
 resultCell = cell(numImages,1);
 diceCoef = zeros(numImages,1);
 IoU = zeros(numImages,1);
+Acc = zeros(numImages,1);
+P = zeros(numImages,1);
+N = zeros(numImages,1);
 TP = 0; FP = 0; FN = 0;
 
 for imIter = 1:numImages
@@ -84,19 +83,17 @@ for imIter = 1:numImages
         end
     end
     % analysis of the image using our algorithm
-    % this is important
-    %     resultDataMatrix(:,:,imIter) = detectPolyps(imCropped,bEdgeMask3);
-    resultCell{imIter} = detectPolyps(imCropped,bEdgeMask3);
+    % this is important - here you can change the method (3rd input of detectPolyps)
+    resultCell{imIter} = detectPolyps(imCropped,bEdgeMask3,'HTRGRd');
 
-    %     figure(1)
-    %     imshow(imCropped.*resultCell{imIter})
     % evaluation of our algorithm using Dice and Jaccard (IoU) coefficients
-%     diceCoef(imIter) = dice(resultDataMatrix(:,:,imIter),GTCropped);
-%     IoU(imIter) = jaccard(resultDataMatrix(:,:,imIter),GTCropped);
+    % and pixel accuracy
     diceCoef(imIter) = dice(resultCell{imIter},logical(GTCropped));
     IoU(imIter) = jaccard(resultCell{imIter},logical(GTCropped));
-%     resultCC = bwconncomp(resultCell{imIter});
-%     GTCC = bwconncomp(logical(GTCropped));
+    Acc(imIter) = (sum(logical(GTCropped == 1) & resultCell{imIter} == 1,'all') + ...
+       sum(logical(GTCropped == 0) & resultCell{imIter} == 0,'all'))/...
+       (size(GTCropped,1)*size(GTCropped,2));
+
     % classifing detection with object-wise approach 
     if IoU(imIter) > .5 % threshold can be changed
         TP = TP + 1;
@@ -107,28 +104,18 @@ for imIter = 1:numImages
             FP = FP + 1;
         end
     end
-    % Honza pokus
-    new = resultCell{imIter}+logical(GTCropped);
-    prekryv = sum(new==2);
-    mimo = sum(new==0);
-    maska = sum(logical(GTCropped)==1);
-    maska2 = sum(logical(GTCropped)==0);
-    P{imIter} = prekryv/maska;
-    N{imIter} = mimo/maska2;
+
 end
 % estimating the pixelwise and objectwise performance metrics
-P = mean(cell2mat(P));
-N = mean(cell2mat(N));
+P = mean(P);
+N = mean(N);
 Se = TP/(TP + FN);
 PPV = TP/(TP + FP);
 imList = imDS.Files;
 end
 
+% auxiliary function for image loading
 function image = read2double(path)
 image = im2double(imread(path));
 end
-
-% function image = read2gray(path)
-%     image = rgb2gray(im2double(imread(path)));
-% end
 

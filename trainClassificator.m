@@ -1,10 +1,11 @@
 %% Script for training the classficator
+% @OndrejNantl,@JanSima,@TerezieDobrovolna
 clear all,clc,close all
 %% loading names of sorted images, preparing training and test datasets
 pathCVC_Orig = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Original\';
 pathCVC_Mask = 'D:\andyn\OneDrive - Vysoké učení technické v Brně\materialy_4r_moje\MPA-ABO\projekt\CVC-ClinicDB\Ground Truth\';
 
-filenames = table2array(readtable('2Skupiny.xlsx'));
+filenames = table2array(readtable('2Groups.xlsx'));
 
 permIDs1 = randperm(size(filenames,1));
 permIDs2 = randperm(size(filenames,1));
@@ -16,12 +17,15 @@ testCats = [ones(1,0.4*size(filenames,1)) repmat(2,1,0.4*size(filenames,1))];
 allIDs = [trainIDs testIDs];
 allCats = [trainCats testCats];
 %% obtaining parameters
+% prealocating feature space, categories and feature names
 featureSpace = zeros(length(allIDs),8);
 catNames = {'Oval','Unclassifiable'};
 featureNames = {'HysThMean','HysThArea','RGMean1','RGArea1','HTRadius','HTMax','RGMean2','RGArea2'};
 diceCoef = zeros(length(allIDs),2);
 IoU = zeros(length(allIDs),2);
+% ve evaluate features for all chosen images
 for imIter = 1:length(allIDs)
+    % loading image and mask
     image = im2double(imread([pathCVC_Orig, num2str(allIDs(imIter)), '.tif']));
     GT = im2double(imread([pathCVC_Mask, num2str(allIDs(imIter)) '.tif']));
     GT(GT<1) = 0;
@@ -57,12 +61,13 @@ for imIter = 1:length(allIDs)
     % Method with Hough transform and region growing
     [x,y,featureSpace(imIter,5),featureSpace(imIter,6)]  = FHouTrans(imPrep);
     [binaryMap2,featureSpace(imIter,7),featureSpace(imIter,8)] = FRegionGrow(imPrep,x,y);
-    
+    %calculating segmentation performance metrics for both methods 
     diceCoef(imIter,1) = dice(binaryMap,logical(GTCropped));
     IoU(imIter,1) = jaccard(binaryMap,logical(GTCropped));
     diceCoef(imIter,2) = dice(binaryMap2,logical(GTCropped));
     IoU(imIter,2) = jaccard(binaryMap2,logical(GTCropped));
 end
+% dividing features to training and test datasets
 trainFeatureSpace = featureSpace(1:(0.6*size(featureSpace,1)),:);
 testFeatureSpace = featureSpace((0.6*size(featureSpace,1)+1):end,:);
 

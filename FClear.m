@@ -15,9 +15,12 @@ function imNoHigh = FClear(inputImage,bEdgeMask)
 % -------------------------------------------------------------------------
 % Authors: Terezie Dobrovolná, Ondřej Nantl, Jan Šíma
 % =========================================================================
-% clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow GTCropped GTCroppedRow
-pm = rangefilt(rgb2gray(inputImage),true(7)); %finding regions with very big dynamic range
-T = graythresh(pm); % estimating threshold for extracting only specular highlights locations
-reflMask = imbinarize(imfill(pm,'holes'),T); % extracting only specular highlights locations
-imNoHigh = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5); % inpaiting the specular highlights
+%finding regions with very big dynamic range
+pm = rangefilt(rgb2gray(inputImage),true(7)); 
+% estimating threshold for extracting only specular highlights locations
+T = graythresh(pm); 
+% extracting only specular highlights locations
+reflMask = imbinarize(imfill(pm,'holes'),T);
+% inpaiting the specular highlights
+imNoHigh = inpaintCoherent(inputImage,logical((~bEdgeMask).*reflMask),'SmoothingFactor',5,'Radius',5);
 end

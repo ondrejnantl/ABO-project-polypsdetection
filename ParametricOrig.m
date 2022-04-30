@@ -4,7 +4,6 @@ clear all; clc;
 %% loading
 % Change the pathway to the dataset!
 pathCVC_Orig ='D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Original\';
-% pathCVC_Mask = 'D:\HONZA\Honza VUT\Ing\SEMESTR2\ABO\Projekt\polypy\CVC-ClinicDB\CVC-ClinicDB\Ground Truth\';
 a = dir([pathCVC_Orig '*.tif']);
 n = numel(a);
 ParametricFieldOrig = [];
@@ -17,7 +16,6 @@ Labels = {'MeanGray','MeanR','MeanG','MeanB','SDGray','SDR','SDG',...
 for idx = 1:n
     im = rgb2gray(im2double(imread([pathCVC_Orig, num2str(idx) '.tif'])));
     imColor = im2double(imread([pathCVC_Orig, num2str(idx) '.tif']));
-%     mask = im2double(imread([pathCVC_Mask, num2str(idx) '.tif']));
 
     % removal of black edge
     clear bEdgeMask bEdgeMask2 bEdgeMask3 imCropped imCroppedRow %maskCropped maskCroppedRow
@@ -30,7 +28,6 @@ for idx = 1:n
             newRowCount = newRowCount + 1;
             bEdgeMask2(newRowCount,:) = bEdgeMask(i,:);
             imCroppedRow(newRowCount,:,:) = image(i,:,:);
-%             GTCroppedRow(newRowCount,:) = GT(i,:);
         end
     end
     newColCount = 0;
@@ -40,7 +37,6 @@ for idx = 1:n
             newColCount = newColCount + 1;
             bEdgeMask3(:,newColCount) = bEdgeMask2(:,j);
             imCropped(:,newColCount,:) = imCroppedRow(:,j,:);
-%             GTCropped(:,newColCount) = GTCroppedRow(:,j);
         end
     end
     % transfer into grayscale

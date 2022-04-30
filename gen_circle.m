@@ -1,4 +1,7 @@
 function kruh = gen_circle(r)
+% Function for generating circle for Hough space
+% Created by lecturers for exercises
+%==========================================================================
     [y,x] = meshgrid(1:r*2+1,1:r*2+1);
     kruh = zeros(size(x));
     s = r+1;
